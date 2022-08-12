@@ -4,6 +4,9 @@ Sora C++ SDK は [Intel Media SDK](https://github.com/Intel-Media-SDK/MediaSDK#i
 
 oneVPL は Intel Media SDK の上位互換であり、Intel Media SDK を利用する環境でも動作します。
 
+oneVPL の動作には intel の CPU が Tiger Lake 以降の世代であることが必須となっています。それ以前の世代の場合は Intel Media SDK をご利用ください。
+詳細については [OneVPL のページ](https://github.com/oneapi-src/oneVPL) ご確認ください。
+
 ## 対応プラットフォーム
 
 - Windows 10 x86_64
