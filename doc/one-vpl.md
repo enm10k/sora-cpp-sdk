@@ -13,7 +13,7 @@ oneVPL は Intel Media SDK の上位互換であり、Intel Media SDK を利用�
 ## 動作確認ができた環境
 
 ### Windows
-
+- GPD WIN3 (Core i7-1195G7) 
 
 ### Ubuntu 20.04 x86_64
 - GPD WIN3 (Core i7-1195G7) 
