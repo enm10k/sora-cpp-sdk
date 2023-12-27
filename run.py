@@ -354,14 +354,20 @@ def apply_patch(patch, dir, depth):
 
 @versioned
 def install_webrtc(version, source_dir, install_dir, platform: str):
-    win = platform.startswith("windows_")
-    filename = f'webrtc.{platform}.{"zip" if win else "tar.gz"}'
-    rm_rf(os.path.join(source_dir, filename))
-    archive = download(
-        f'https://github.com/shiguredo-webrtc-build/webrtc-build/releases/download/{version}/{filename}',
-        output_dir=source_dir)
-    rm_rf(os.path.join(install_dir, 'webrtc'))
-    extract(archive, output_dir=install_dir, output_dirname='webrtc')
+    # TODO: revert
+    # 対応済みの webrtc がリリースされていないため、ローカルでの開発用にコメントアウト
+    # mkdir -p _install/ubuntu-22.04_armv8_jetson/release/webrtc
+    # cd _install/ubuntu-22.04_armv8_jetson/release/webrtc
+    #
+    # win = platform.startswith("windows_")
+    # filename = f'webrtc.{platform}.{"zip" if win else "tar.gz"}'
+    # rm_rf(os.path.join(source_dir, filename))
+    # archive = download(
+    #     f'https://github.com/shiguredo-webrtc-build/webrtc-build/releases/download/{version}/{filename}',
+    #     output_dir=source_dir)
+    # rm_rf(os.path.join(install_dir, 'webrtc'))
+    # extract(archive, output_dir=install_dir, output_dirname='webrtc')
+    pass
 
 
 class WebrtcConfig(NamedTuple):
@@ -808,7 +814,7 @@ def install_lyra(version, install_dir, base_dir, debug, target, webrtc_version, 
             os.environ['BAZEL_LLVM_DIR'] = os.path.join(install_dir, 'llvm')
             os.environ['BAZEL_WEBRTC_INCLUDE_DIR'] = webrtc_info.webrtc_include_dir
             os.environ['BAZEL_WEBRTC_LIBRARY_DIR'] = webrtc_info.webrtc_library_dir
-        if target == 'ubuntu-20.04_armv8_jetson':
+        if target in ('ubuntu-20.04_armv8_jetson', 'ubuntu-22.04_armv8_jetson'):
             opts += ['--config', 'jetson']
             clang_version = get_clang_version(os.path.join(install_dir, 'llvm', 'clang', 'bin', 'clang'))
             clang_version = fix_clang_version(os.path.join(install_dir, 'llvm', 'clang'), clang_version)
@@ -927,7 +933,7 @@ class PlatformTarget(object):
         if self.os == 'raspberry-pi-os':
             return f'raspberry-pi-os_{self.arch}'
         if self.os == 'jetson':
-            return 'ubuntu-20.04_armv8_jetson'
+            return f'ubuntu-{self.osver}_armv8_jetson'
         raise Exception('error')
 
 
@@ -1145,7 +1151,7 @@ def install_deps(platform: Platform, source_dir, build_dir, install_dir, debug,
         elif platform.target.os == 'raspberry-pi-os':
             webrtc_platform = f'raspberry-pi-os_{platform.target.arch}'
         elif platform.target.os == 'jetson':
-            webrtc_platform = 'ubuntu-20.04_armv8'
+            webrtc_platform = f'ubuntu-{platform.target.osver}_armv8'
         else:
             raise Exception(f'Unknown platform {platform.target.os}')
 
@@ -1538,7 +1544,7 @@ def install_deps(platform: Platform, source_dir, build_dir, install_dir, debug,
 
 
 AVAILABLE_TARGETS = ['windows_x86_64', 'macos_x86_64', 'macos_arm64', 'ubuntu-20.04_x86_64',
-                     'ubuntu-22.04_x86_64', 'ubuntu-20.04_armv8_jetson', 'ios', 'android']
+                     'ubuntu-22.04_x86_64', 'ubuntu-20.04_armv8_jetson', 'ubuntu-22.04_armv8_jetson', 'ios', 'android']
 WINDOWS_SDK_VERSION = '10.0.20348.0'
 
 
@@ -1573,7 +1579,9 @@ def main():
     elif args.target == 'ubuntu-22.04_x86_64':
         platform = Platform('ubuntu', '22.04', 'x86_64')
     elif args.target == 'ubuntu-20.04_armv8_jetson':
-        platform = Platform('jetson', None, 'armv8')
+        platform = Platform('jetson', '20.04', 'armv8')
+    elif args.target == 'ubuntu-22.04_armv8_jetson':
+        platform = Platform('jetson', '22.04', 'armv8')
     elif args.target == 'ios':
         platform = Platform('ios', None, None)
     elif args.target == 'android':
@@ -1829,7 +1837,7 @@ def main():
                     cmake_args.append("-DTEST_DEVICE_LIST=ON")
                 if platform.target.package_name in ('windows_x86_64', 'macos_x86_64', 'macos_arm64',
                                                     'ubuntu-20.04_x86_64', 'ubuntu-22.04_x86_64',
-                                                    'ubuntu-20.04_armv8_jetson'):
+                                                    'ubuntu-20.04_armv8_jetson', 'ubuntu-22.04_armv8_jetson'):
                     if not args.no_lyra:
                         cmake_args.append("-DTEST_LYRA=ON")
 
