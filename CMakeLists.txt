@@ -14,6 +14,10 @@ set(LIBCXX_INCLUDE_DIR "" CACHE PATH "libc++ を使う場合の libc++ のイン
 set(USE_NVCODEC_ENCODER OFF CACHE BOOL "NVIDIA Video Codec SDK によるハードウェアエンコーダを利用するかどうか")
 set(USE_LYRA OFF CACHE BOOL "Lyra を利用するかどうか")
 
+# ubuntu-22.04_armv8_jetson 対応時に追加
+# rootfs 上のプログラムが利用されることを防ぐ
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+
 project(sora-cpp-sdk C CXX)
 
 set(SORA_TARGET ${SORA_CPP_SDK_TARGET})
