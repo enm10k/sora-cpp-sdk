@@ -15,8 +15,8 @@
   - @melpon
 - [ADD] Catch2 を使って E2E テストを追加
   - @melpon
-- [UPDATE] libwebrtc を `m122.6261.0.1` にあげる
-  - Ubuntu のビルドを通すために、 __assertion_handler というファイルをコピーする必要があった
+- [UPDATE] libwebrtc を `m123.6312.3.0` にあげる
+  - libwebrtc を`m122.6261.0.1` へあげたタイミングで、 Ubuntu のビルドを通すために __assertion_handler というファイルをコピーする必要があった
   - @miosakuma @enm10k
 - [FIX] HWA 利用の判定を `#if defined(USE_*_ENCODER)` という使い方で統一するように修正
   - @melpon
