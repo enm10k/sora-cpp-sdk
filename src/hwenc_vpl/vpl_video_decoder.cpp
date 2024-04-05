@@ -183,6 +183,46 @@ bool VplVideoDecoderImpl::Configure(
 int32_t VplVideoDecoderImpl::Decode(const webrtc::EncodedImage& input_image,
                                     bool missing_frames,
                                     int64_t render_time_ms) {
+  // 共通
+  static int frame;
+  RTC_LOG(LS_INFO) << "frame=" << frame;
+  size_t input_image_size;
+  uint32_t input_image_pts;
+  /*
+  // 書き込み
+
+  const uint8_t* input_image_data = input_image.data();
+  input_image_size = input_image.size();
+  input_image_pts = input_image.RtpTimestamp();
+  char name[256];
+  sprintf(name, "bin/frame_%04d.bin", frame++);
+  FILE* fp = fopen(name, "wb");
+  fwrite(&input_image_pts, sizeof(input_image_pts), 1, fp);
+  fwrite(input_image.data(), 1, input_image.size(), fp);
+  fclose(fp);
+  */
+
+  uint8_t* input_image_data;
+  char name[256];
+  sprintf(name, "bin/frame_%04d.bin", frame++);
+  FILE* fp = fopen(name, "rb");
+  if (fp == NULL) {
+    frame = 0;
+    sprintf(name, "bin/frame_%04d.bin", frame++);
+    fp = fopen(name, "rb");
+  }
+  fseek(fp, 0, SEEK_END);
+  size_t file_size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+  fread(&input_image_pts, sizeof(input_image_pts), 1, fp);
+  input_image_size = file_size - sizeof(input_image_pts);
+  std::unique_ptr<uint8_t[]> input_image_data_buf(
+      new uint8_t[input_image_size]);
+  input_image_data = input_image_data_buf.get();
+  fread(input_image_data, 1, input_image_size, fp);
+  fclose(fp);
+  input_image_pts = input_image.RtpTimestamp();
+
   if (decoder_ == nullptr) {
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
   }
@@ -212,9 +252,12 @@ int32_t VplVideoDecoderImpl::Decode(const webrtc::EncodedImage& input_image,
   memmove(bitstream_.Data, bitstream_.Data + bitstream_.DataOffset,
           bitstream_.DataLength);
   bitstream_.DataOffset = 0;
-  memcpy(bitstream_.Data + bitstream_.DataLength, input_image.data(),
-         input_image.size());
-  bitstream_.DataLength += input_image.size();
+  // memcpy(bitstream_.Data + bitstream_.DataLength, input_image.data(),
+  //        input_image.size());
+  // bitstream_.DataLength += input_image.size();
+  memcpy(bitstream_.Data + bitstream_.DataLength, input_image_data,
+         input_image_size);
+  bitstream_.DataLength += input_image_size;
 
   // 使ってない入力サーフェスを取り出す
   auto surface =
