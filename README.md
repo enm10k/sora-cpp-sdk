@@ -29,7 +29,8 @@ Please read https://github.com/shiguredo/oss/blob/master/README.en.md before use
   - Google Android HWA
     - VP8 / VP9 / H.264 / H.265
   - [Intel VPL](https://github.com/intel/libvpl) (Intel Media SDK の後継)
-    - VP9 / AV1 / H.264
+    - VP9 / H.264 / H.265
+    - H.265 は Ubuntu 22.04 のみ
 
 ## ライブラリのバイナリ提供について
 
@@ -38,6 +39,10 @@ Please read https://github.com/shiguredo/oss/blob/master/README.en.md before use
 _hololens2 は無視してください_
 
 https://github.com/shiguredo/sora-cpp-sdk/releases
+
+## サンプル集
+
+[examples](examples)を参照してください。
 
 ## 対応 Sora
 
@@ -56,10 +61,6 @@ https://github.com/shiguredo/sora-cpp-sdk/releases
 - Android 7 arm64 以降
 - iOS 13 arm64 以降
 
-## サンプル集
-
-https://github.com/shiguredo/sora-cpp-sdk-samples
-
 ## FAQ
 
 [faq.md](doc/faq.md) をお読みください。
@@ -67,6 +68,9 @@ https://github.com/shiguredo/sora-cpp-sdk-samples
 ## 優先実装
 
 優先実装とは Sora のライセンスを契約頂いているお客様限定で Sora C++ SDK の実装予定機能を有償にて前倒しで実装することです。
+
+- Intel VPL H.265 対応
+  - [アダワープジャパン株式会社](https://adawarp.com/) 様
 
 ### 優先実装が可能な機能一覧
 

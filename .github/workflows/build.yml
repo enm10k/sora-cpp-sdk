@@ -21,6 +21,7 @@ jobs:
       TEST_SIGNALING_URL: ${{ secrets.TEST_SIGNALING_URL }}
       TEST_CHANNEL_ID_PREFIX: ${{ secrets.TEST_CHANNEL_ID_PREFIX }}
       TEST_SECRET_KEY: ${{ secrets.TEST_SECRET_KEY }}
+      TEST_MATRIX_NAME: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: microsoft/setup-msbuild@v2
@@ -77,6 +78,20 @@ jobs:
         with:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
+      # Examples のビルド
+      - name: Build Examples
+        run: |
+          cd examples
+          mkdir examples_${{ matrix.name }}
+          foreach ($app in @('sdl_sample', 'sumomo', 'messaging_recvonly_sample')) {
+            python3 "$app\${{ matrix.name }}\run.py" --sora-dir ..
+            cp "_build\${{ matrix.name }}\release\$app\Release\$app.exe" "examples_${{ matrix.name }}"
+          }
+      - name: Upload Examples Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples_${{ matrix.name }}
+          path: examples/examples_${{ matrix.name }}
   build-macos:
     strategy:
       fail-fast: false
@@ -90,6 +105,7 @@ jobs:
       TEST_SIGNALING_URL: ${{ secrets.TEST_SIGNALING_URL }}
       TEST_CHANNEL_ID_PREFIX: ${{ secrets.TEST_CHANNEL_ID_PREFIX }}
       TEST_SECRET_KEY: ${{ secrets.TEST_SECRET_KEY }}
+      TEST_MATRIX_NAME: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode 14.3.1
@@ -120,6 +136,22 @@ jobs:
         with:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
+      # Examples のビルド
+      - name: Build Examples
+        run: |
+          cd examples
+          mkdir examples_${{ matrix.name }}
+          for app in sdl_sample sumomo messaging_recvonly_sample; do
+            python3 $app/${{ matrix.name }}/run.py --sora-dir ..
+            cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
+          done
+        if: matrix.name == 'macos_arm64'
+      - name: Upload Examples Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples_${{ matrix.name }}
+          path: examples/examples_${{ matrix.name }}
+        if: matrix.name == 'macos_arm64'
   build-ubuntu:
     strategy:
       fail-fast: false
@@ -135,6 +167,7 @@ jobs:
       TEST_SIGNALING_URL: ${{ secrets.TEST_SIGNALING_URL }}
       TEST_CHANNEL_ID_PREFIX: ${{ secrets.TEST_CHANNEL_ID_PREFIX }}
       TEST_SECRET_KEY: ${{ secrets.TEST_SECRET_KEY }}
+      TEST_MATRIX_NAME: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
       - name: Disk cleanup
@@ -185,7 +218,7 @@ jobs:
           sudo apt-get -y install ninja-build
       # JDK を指定しないとデフォルトの JDK 11 で動作するため指定する
       - name: Setup JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -215,6 +248,22 @@ jobs:
         with:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
+      # Examples のビルド
+      - name: Build Examples
+        run: |
+          cd examples
+          mkdir examples_${{ matrix.name }}
+          for app in sdl_sample sumomo messaging_recvonly_sample; do
+            python3 $app/${{ matrix.name }}/run.py --sora-dir ..
+            cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
+          done
+        if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64' || matrix.name == 'ubuntu-20.04_armv8_jetson'
+      - name: Upload Examples Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples_${{ matrix.name }}
+          path: examples/examples_${{ matrix.name }}
+        if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64' || matrix.name == 'ubuntu-20.04_armv8_jetson'
       - name: Slack Notification
         if: failure()
         uses: rtCamp/action-slack-notify@v2
@@ -262,9 +311,10 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
         id: env
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.env.outputs.package_paths }}
+          prerelease: ${{ contains(github.ref, 'canary') }}
       - name: Slack Notification
         if: failure()
         uses: rtCamp/action-slack-notify@v2
