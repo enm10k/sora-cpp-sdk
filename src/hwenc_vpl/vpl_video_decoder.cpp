@@ -69,6 +69,9 @@ class VplVideoDecoderImpl : public VplVideoDecoder {
   std::unique_ptr<MFXVideoDECODE> decoder_;
   std::vector<uint8_t> surface_buffer_;
   std::vector<mfxFrameSurface1> surfaces_;
+
+  std::vector<uint8_t> bitstream_buffer_;
+  mfxBitstream bitstream_;
 };
 
 VplVideoDecoderImpl::VplVideoDecoderImpl(std::shared_ptr<VplSession> session,
@@ -192,13 +195,11 @@ int32_t VplVideoDecoderImpl::Decode(const webrtc::EncodedImage& input_image,
     return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
   }
 
-  mfxBitstream bs;
-  memset(&bs, 0, sizeof(mfxBitstream));
-  std::vector<uint8_t> buf;
-  buf.assign(input_image.data(), input_image.data() + input_image.size());
-  bs.Data = buf.data();
-  bs.DataLength = input_image.size();
-  bs.MaxLength = input_image.size();
+  if (bitstream_.MaxLength < bitstream_.DataLength + input_image.size()) {
+    bitstream_buffer_.resize(bitstream_.DataLength + input_image.size());
+    bitstream_.MaxLength = bitstream_.DataLength + bitstream_buffer_.size();
+    bitstream_.Data = bitstream_buffer_.data();
+  }
   //printf("size=%zu\n", input_image.size());
   //for (size_t i = 0; i < input_image.size(); i++) {
   //  const uint8_t* p = input_image.data();
@@ -209,6 +210,13 @@ int32_t VplVideoDecoderImpl::Decode(const webrtc::EncodedImage& input_image,
   //    break;
   //  }
   //}
+
+  memmove(bitstream_.Data, bitstream_.Data + bitstream_.DataOffset,
+          bitstream_.DataLength);
+  bitstream_.DataOffset = 0;
+  memcpy(bitstream_.Data + bitstream_.DataLength, input_image.data(),
+         input_image.size());
+  bitstream_.DataLength += input_image.size();
 
   // 使ってない入力サーフェスを取り出す
   auto surface =
@@ -226,7 +234,12 @@ int32_t VplVideoDecoderImpl::Decode(const webrtc::EncodedImage& input_image,
     mfxFrameSurface1* out_surface = nullptr;
 
     while (true) {
-      sts = decoder_->DecodeFrameAsync(&bs, &*surface, &out_surface, &syncp);
+      int before = bitstream_.DataLength;
+      sts = decoder_->DecodeFrameAsync(&bitstream_, &*surface, &out_surface,
+                                       &syncp);
+
+      RTC_LOG(LS_INFO) << "DecodeFrameAsync sts=" << sts << " " << before
+                       << " -> " << bitstream_.DataLength;
       if (sts == MFX_WRN_DEVICE_BUSY) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         continue;
@@ -243,7 +256,8 @@ int32_t VplVideoDecoderImpl::Decode(const webrtc::EncodedImage& input_image,
     }
     auto width = param.mfx.FrameInfo.CropW;
     auto height = param.mfx.FrameInfo.CropH;
-    if (width_ != width || height_ != height) {
+    if (sts == MFX_WRN_VIDEO_PARAM_CHANGED ||
+        (width_ != width || height_ != height)) {
       RTC_LOG(LS_INFO) << "Change Frame Size: " << width_ << "x" << height_
                        << " to " << width << "x" << height;
       width_ = width;
@@ -322,6 +336,12 @@ bool VplVideoDecoderImpl::InitVpl() {
 
   RTC_LOG(LS_INFO) << "Decoder NumFrameSuggested="
                    << alloc_request_.NumFrameSuggested;
+
+  // 入力ビットストリーム
+  bitstream_buffer_.resize(1024 * 1024);
+  memset(&bitstream_, 0, sizeof(bitstream_));
+  bitstream_.MaxLength = bitstream_buffer_.size();
+  bitstream_.Data = bitstream_buffer_.data();
 
   // 必要な枚数分の出力サーフェスを作る
   {
