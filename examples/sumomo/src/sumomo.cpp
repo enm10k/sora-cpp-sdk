@@ -32,6 +32,7 @@ struct MomoSampleConfig {
   bool hw_mjpeg_decoder = false;
   int video_bit_rate = 0;
   int audio_bit_rate = 0;
+  boost::json::value video_h264_params;
   boost::json::value metadata;
   boost::optional<bool> multistream;
   boost::optional<bool> spotlight;
@@ -137,6 +138,7 @@ class MomoSample : public std::enable_shared_from_this<MomoSample>,
     config.audio_codec_type = config_.audio_codec_type;
     config.video_bit_rate = config_.video_bit_rate;
     config.audio_bit_rate = config_.audio_bit_rate;
+    config.video_h264_params = config_.video_h264_params;
     config.metadata = config_.metadata;
     config.multistream = config_.multistream;
     config.spotlight = config_.spotlight;
@@ -148,12 +150,14 @@ class MomoSample : public std::enable_shared_from_this<MomoSample>,
     config.proxy_url = config_.proxy_url;
     config.proxy_username = config_.proxy_username;
     config.proxy_password = config_.proxy_password;
-    config.network_manager = context_->signaling_thread()->BlockingCall([this]() {
-        return context_->connection_context()->default_network_manager();
-    });
-    config.socket_factory = context_->signaling_thread()->BlockingCall([this]() {
-        return context_->connection_context()->default_socket_factory();
-    });
+    config.network_manager =
+        context_->signaling_thread()->BlockingCall([this]() {
+          return context_->connection_context()->default_network_manager();
+        });
+    config.socket_factory =
+        context_->signaling_thread()->BlockingCall([this]() {
+          return context_->connection_context()->default_socket_factory();
+        });
     conn_ = sora::SoraSignaling::Create(config);
 
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
@@ -362,6 +366,9 @@ int main(int argc, char* argv[]) {
       ->check(CLI::Range(0, 30000));
   app.add_option("--audio-bit-rate", config.audio_bit_rate, "Audio bit rate")
       ->check(CLI::Range(0, 510));
+  std::string video_h264_params;
+  app.add_option("--video-h264-params", video_h264_params,
+                 "Parameters for H.264 video codec");
   std::string metadata;
   app.add_option("--metadata", metadata,
                  "Signaling metadata used in connect message")
@@ -403,6 +410,10 @@ int main(int argc, char* argv[]) {
     app.parse(argc, argv);
   } catch (const CLI::ParseError& e) {
     exit(app.exit(e));
+  }
+
+  if (!video_h264_params.empty()) {
+    config.video_h264_params = boost::json::parse(video_h264_params);
   }
 
   // メタデータのパース
