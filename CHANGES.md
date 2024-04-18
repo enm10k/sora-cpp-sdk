@@ -11,7 +11,7 @@
 
 ## develop
 
-- [UPDATE] libwebrtc を `m123.6312.3.2` にあげる
+- [UPDATE] libwebrtc を `m123.6312.3.3` にあげる
   - @melpon @enm10k
 
 ## 2024.6.0 (2024-04-01)
