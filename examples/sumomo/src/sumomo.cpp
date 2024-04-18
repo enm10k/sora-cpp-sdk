@@ -33,6 +33,7 @@ struct MomoSampleConfig {
   int video_bit_rate = 0;
   int audio_bit_rate = 0;
   boost::json::value video_h264_params;
+  boost::json::value video_h265_params;
   boost::json::value metadata;
   boost::optional<bool> multistream;
   boost::optional<bool> spotlight;
@@ -139,6 +140,7 @@ class MomoSample : public std::enable_shared_from_this<MomoSample>,
     config.video_bit_rate = config_.video_bit_rate;
     config.audio_bit_rate = config_.audio_bit_rate;
     config.video_h264_params = config_.video_h264_params;
+    config.video_h265_params = config_.video_h265_params;
     config.metadata = config_.metadata;
     config.multistream = config_.multistream;
     config.spotlight = config_.spotlight;
@@ -369,6 +371,9 @@ int main(int argc, char* argv[]) {
   std::string video_h264_params;
   app.add_option("--video-h264-params", video_h264_params,
                  "Parameters for H.264 video codec");
+  std::string video_h265_params;
+  app.add_option("--video-h265-params", video_h265_params,
+                 "Parameters for H.265 video codec");
   std::string metadata;
   app.add_option("--metadata", metadata,
                  "Signaling metadata used in connect message")
@@ -414,6 +419,10 @@ int main(int argc, char* argv[]) {
 
   if (!video_h264_params.empty()) {
     config.video_h264_params = boost::json::parse(video_h264_params);
+  }
+
+  if (!video_h265_params.empty()) {
+    config.video_h265_params = boost::json::parse(video_h265_params);
   }
 
   // メタデータのパース
