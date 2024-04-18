@@ -22,7 +22,7 @@ namespace sora {
 
 std::unique_ptr<webrtc::VideoEncoderFactory> CreateMacVideoEncoderFactory() {
   return webrtc::ObjCToNativeVideoEncoderFactory(
-      [[RTCDefaultVideoEncoderFactory alloc] init]);
+     [[RTCDefaultVideoEncoderFactory alloc] initWithBframe:YES]);
 }
 
 std::unique_ptr<webrtc::VideoDecoderFactory> CreateMacVideoDecoderFactory() {
