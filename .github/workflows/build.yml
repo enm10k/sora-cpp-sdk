@@ -53,6 +53,7 @@ jobs:
       - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
         env:
           SORA_CPP_SDK_TEMP_DIR: C:\
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get package name
         run: |
           Get-Content "_package\${{ matrix.name }}\release\sora.env" | Foreach-Object {
@@ -87,6 +88,8 @@ jobs:
             python3 "$app\${{ matrix.name }}\run.py" --sora-dir ..
             cp "_build\${{ matrix.name }}\release\$app\Release\$app.exe" "examples_${{ matrix.name }}"
           }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -115,6 +118,8 @@ jobs:
           echo "user=`users`" >> $GITHUB_OUTPUT
         id: env
       - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get package name
         run: |
           source _package/${{ matrix.name }}/release/sora.env
@@ -145,6 +150,8 @@ jobs:
             python3 $app/${{ matrix.name }}/run.py --sora-dir ..
             cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
           done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: matrix.name == 'macos_arm64'
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
@@ -227,6 +234,8 @@ jobs:
         uses: android-actions/setup-android@v3
         if: matrix.name == 'android'
       - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get package name
         run: |
           source _package/${{ matrix.name }}/release/sora.env
@@ -257,6 +266,8 @@ jobs:
             python3 $app/${{ matrix.name }}/run.py --sora-dir ..
             cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
           done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64' || matrix.name == 'ubuntu-20.04_armv8_jetson'
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
