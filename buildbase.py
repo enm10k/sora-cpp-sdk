@@ -466,11 +466,11 @@ def install_webrtc(version, source_dir, install_dir, platform: str):
     win = platform.startswith("windows_")
     filename = f'webrtc.{platform}.{"zip" if win else "tar.gz"}'
     rm_rf(os.path.join(source_dir, filename))
-    # archive = download(
-    #     f"https://github.com/shiguredo-webrtc-build/webrtc-build/releases/download/{version}/{filename}",
-    #     output_dir=source_dir,
-    # )
-    archive = gh_run_download("enm10k/webrtc-build", filename, source_dir, branch="master")
+    archive = download(
+        f"https://github.com/enm10k/webrtc-build/releases/download/{version}/{filename}",
+        output_dir=source_dir,
+    )
+    # archive = gh_run_download("enm10k/webrtc-build", filename, source_dir, branch="master")
     rm_rf(os.path.join(install_dir, "webrtc"))
     extract(archive, output_dir=install_dir, output_dirname="webrtc")
 

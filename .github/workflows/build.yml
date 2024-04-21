@@ -164,9 +164,9 @@ jobs:
       fail-fast: false
       matrix:
         name:
-          - ubuntu-20.04_x86_64
-          - ubuntu-22.04_x86_64
-          - ubuntu-20.04_armv8_jetson
+          # - ubuntu-20.04_x86_64
+          # - ubuntu-22.04_x86_64
+          # - ubuntu-20.04_armv8_jetson
           - android
     name: Build sora-cpp-sdk for ${{ matrix.name }}
     runs-on: ${{ matrix.name == 'ubuntu-22.04_x86_64' && 'ubuntu-22.04' || 'ubuntu-20.04' }}
@@ -303,15 +303,15 @@ jobs:
       - uses: ./.github/actions/download
         with:
           platform: ios
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-20.04_armv8_jetson
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-20.04_x86_64
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-22.04_x86_64
+      # - uses: ./.github/actions/download
+      #   with:
+      #     platform: ubuntu-20.04_armv8_jetson
+      # - uses: ./.github/actions/download
+      #   with:
+      #     platform: ubuntu-20.04_x86_64
+      # - uses: ./.github/actions/download
+      #   with:
+      #     platform: ubuntu-22.04_x86_64
       - uses: ./.github/actions/download
         with:
           platform: android
