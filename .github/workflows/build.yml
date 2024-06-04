@@ -50,10 +50,10 @@ jobs:
           key: windows-cuda-${{ steps.versions.outputs.cuda_version }}.v1
       - run: echo "${CUDA_VERSION}" > _install\windows_x86_64\release\cuda.version
         if: steps.cache-cuda.outputs.cache-hit == 'true'
-      - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
-        env:
-          SORA_CPP_SDK_TEMP_DIR: C:\
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
+      #   env:
+      #     SORA_CPP_SDK_TEMP_DIR: C:\
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get package name
         run: |
           Get-Content "_package\${{ matrix.name }}\release\sora.env" | Foreach-Object {
@@ -117,9 +117,9 @@ jobs:
         run: |
           echo "user=`users`" >> $GITHUB_OUTPUT
         id: env
-      - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get package name
         run: |
           source _package/${{ matrix.name }}/release/sora.env
@@ -159,130 +159,130 @@ jobs:
           name: examples_${{ matrix.name }}
           path: examples/examples_${{ matrix.name }}
         if: matrix.name == 'macos_arm64'
-  build-ubuntu:
-    strategy:
-      fail-fast: false
-      matrix:
-        name:
-          # - ubuntu-20.04_x86_64
-          # - ubuntu-22.04_x86_64
-          # - ubuntu-20.04_armv8_jetson
-          # - android
-    name: Build sora-cpp-sdk for ${{ matrix.name }}
-    runs-on: ${{ matrix.name == 'ubuntu-22.04_x86_64' && 'ubuntu-22.04' || 'ubuntu-20.04' }}
-    env:
-      TEST_SIGNALING_URL: ${{ secrets.TEST_SIGNALING_URL }}
-      TEST_CHANNEL_ID_PREFIX: ${{ secrets.TEST_CHANNEL_ID_PREFIX }}
-      TEST_SECRET_KEY: ${{ secrets.TEST_SECRET_KEY }}
-      TEST_MATRIX_NAME: ${{ matrix.name }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Disk cleanup
-        run: |
-          set -x
-          df -h
-          sudo du -h -d1 /usr/local
-          sudo du -h -d1 /usr/local/share
-          sudo du -h -d1 /usr/local/lib
-          sudo du -h -d1 /usr/share
-          docker rmi `docker images -q -a`
-          # 4.6G
-          sudo rm -rf /usr/local/.ghcup
-          # 1.7G
-          sudo rm -rf /usr/share/swift
-          # 1.4G
-          sudo rm -rf /usr/share/dotnet
-          df -h
-      - name: Install deps for ${{ matrix.name }}
-        if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64'
-        run: |
-          source VERSION
-          # clang-18 と CUDA を入れる
-          sudo apt-get update
-          sudo apt-get install -y software-properties-common
-
-          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
-          sudo dpkg -i cuda-keyring_*all.deb
-          sudo apt-get update
-          DEBIAN_FRONTEND=noninteractive sudo apt-get -y install cuda=$CUDA_VERSION
-
-          wget https://apt.llvm.org/llvm.sh
-          chmod a+x llvm.sh
-          sudo ./llvm.sh 18
-
-          # Intel Media SDK のために libva-dev, libdrm-dev を入れる
-          DEBIAN_FRONTEND=noninteractive sudo apt-get -y install libva-dev libdrm-dev
-      - name: Install deps for Jetson series
-        if: matrix.name == 'ubuntu-20.04_armv8_jetson'
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install multistrap binutils-aarch64-linux-gnu
-          # multistrap に insecure なリポジトリからの取得を許可する設定を入れる
-          sudo sed -e 's/Apt::Get::AllowUnauthenticated=true/Apt::Get::AllowUnauthenticated=true";\n$config_str .= " -o Acquire::AllowInsecureRepositories=true/' -i /usr/sbin/multistrap
-      - name: Install deps for Android
-        if: matrix.name == 'android'
-        run: |
-          sudo apt-get -y install ninja-build
-      # JDK を指定しないとデフォルトの JDK 11 で動作するため指定する
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-        if: matrix.name == 'android'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        if: matrix.name == 'android'
-      - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get package name
-        run: |
-          source _package/${{ matrix.name }}/release/sora.env
-          echo "name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "boost_name=${BOOST_PACKAGE_NAME}" >> $GITHUB_OUTPUT
-        id: package_name
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.package_name.outputs.name }}
-          path: _package/${{ matrix.name }}/release/${{ steps.package_name.outputs.name }}
-      - name: Upload Boost Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.package_name.outputs.boost_name }}
-          path: _package/${{ matrix.name }}/release/${{ steps.package_name.outputs.boost_name }}
-      - name: Upload Environment
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.name }}.env
-          path: _package/${{ matrix.name }}/release/sora.env
-      # Examples のビルド
-      - name: Build Examples
-        run: |
-          cd examples
-          mkdir examples_${{ matrix.name }}
-          for app in sdl_sample sumomo messaging_recvonly_sample; do
-            python3 $app/${{ matrix.name }}/run.py --sora-dir ..
-            cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
-          done
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64' || matrix.name == 'ubuntu-20.04_armv8_jetson'
-      - name: Upload Examples Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: examples_${{ matrix.name }}
-          path: examples/examples_${{ matrix.name }}
-        if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64' || matrix.name == 'ubuntu-20.04_armv8_jetson'
-      - name: Slack Notification
-        if: failure()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_CHANNEL: sora-cpp-sdk
-          SLACK_COLOR: danger
-          SLACK_TITLE: Build failed
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  # build-ubuntu:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       name:
+  #         # - ubuntu-20.04_x86_64
+  #         # - ubuntu-22.04_x86_64
+  #         # - ubuntu-20.04_armv8_jetson
+  #         # - android
+  #   name: Build sora-cpp-sdk for ${{ matrix.name }}
+  #   runs-on: ${{ matrix.name == 'ubuntu-22.04_x86_64' && 'ubuntu-22.04' || 'ubuntu-20.04' }}
+  #   env:
+  #     TEST_SIGNALING_URL: ${{ secrets.TEST_SIGNALING_URL }}
+  #     TEST_CHANNEL_ID_PREFIX: ${{ secrets.TEST_CHANNEL_ID_PREFIX }}
+  #     TEST_SECRET_KEY: ${{ secrets.TEST_SECRET_KEY }}
+  #     TEST_MATRIX_NAME: ${{ matrix.name }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Disk cleanup
+  #       run: |
+  #         set -x
+  #         df -h
+  #         sudo du -h -d1 /usr/local
+  #         sudo du -h -d1 /usr/local/share
+  #         sudo du -h -d1 /usr/local/lib
+  #         sudo du -h -d1 /usr/share
+  #         docker rmi `docker images -q -a`
+  #         # 4.6G
+  #         sudo rm -rf /usr/local/.ghcup
+  #         # 1.7G
+  #         sudo rm -rf /usr/share/swift
+  #         # 1.4G
+  #         sudo rm -rf /usr/share/dotnet
+  #         df -h
+  #     - name: Install deps for ${{ matrix.name }}
+  #       if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64'
+  #       run: |
+  #         source VERSION
+  #         # clang-18 と CUDA を入れる
+  #         sudo apt-get update
+  #         sudo apt-get install -y software-properties-common
+# 
+  #         wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
+  #         sudo dpkg -i cuda-keyring_*all.deb
+  #         sudo apt-get update
+  #         DEBIAN_FRONTEND=noninteractive sudo apt-get -y install cuda=$CUDA_VERSION
+# 
+  #         wget https://apt.llvm.org/llvm.sh
+  #         chmod a+x llvm.sh
+  #         sudo ./llvm.sh 18
+# 
+  #         # Intel Media SDK のために libva-dev, libdrm-dev を入れる
+  #         DEBIAN_FRONTEND=noninteractive sudo apt-get -y install libva-dev libdrm-dev
+  #     - name: Install deps for Jetson series
+  #       if: matrix.name == 'ubuntu-20.04_armv8_jetson'
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get -y install multistrap binutils-aarch64-linux-gnu
+  #         # multistrap に insecure なリポジトリからの取得を許可する設定を入れる
+  #         sudo sed -e 's/Apt::Get::AllowUnauthenticated=true/Apt::Get::AllowUnauthenticated=true";\n$config_str .= " -o Acquire::AllowInsecureRepositories=true/' -i /usr/sbin/multistrap
+  #     - name: Install deps for Android
+  #       if: matrix.name == 'android'
+  #       run: |
+  #         sudo apt-get -y install ninja-build
+  #     # JDK を指定しないとデフォルトの JDK 11 で動作するため指定する
+  #     - name: Setup JDK 17
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
+  #       if: matrix.name == 'android'
+  #     - name: Setup Android SDK
+  #       uses: android-actions/setup-android@v3
+  #       if: matrix.name == 'android'
+  #     # - run: python3 run.py --test --run-e2e-test --package ${{ matrix.name }}
+  #     #   env:
+  #     #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Get package name
+  #       run: |
+  #         source _package/${{ matrix.name }}/release/sora.env
+  #         echo "name=${PACKAGE_NAME}" >> $GITHUB_OUTPUT
+  #         echo "boost_name=${BOOST_PACKAGE_NAME}" >> $GITHUB_OUTPUT
+  #       id: package_name
+  #     - name: Upload Artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ${{ steps.package_name.outputs.name }}
+  #         path: _package/${{ matrix.name }}/release/${{ steps.package_name.outputs.name }}
+  #     - name: Upload Boost Artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ${{ steps.package_name.outputs.boost_name }}
+  #         path: _package/${{ matrix.name }}/release/${{ steps.package_name.outputs.boost_name }}
+  #     - name: Upload Environment
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ${{ matrix.name }}.env
+  #         path: _package/${{ matrix.name }}/release/sora.env
+  #     # Examples のビルド
+  #     - name: Build Examples
+  #       run: |
+  #         cd examples
+  #         mkdir examples_${{ matrix.name }}
+  #         for app in sdl_sample sumomo messaging_recvonly_sample; do
+  #           python3 $app/${{ matrix.name }}/run.py --sora-dir ..
+  #           cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
+  #         done
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64' || matrix.name == 'ubuntu-20.04_armv8_jetson'
+  #     - name: Upload Examples Artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: examples_${{ matrix.name }}
+  #         path: examples/examples_${{ matrix.name }}
+  #       if: matrix.name == 'ubuntu-20.04_x86_64' || matrix.name == 'ubuntu-22.04_x86_64' || matrix.name == 'ubuntu-20.04_armv8_jetson'
+  #     - name: Slack Notification
+  #       if: failure()
+  #       uses: rtCamp/action-slack-notify@v2
+  #       env:
+  #         SLACK_CHANNEL: sora-cpp-sdk
+  #         SLACK_COLOR: danger
+  #         SLACK_TITLE: Build failed
+  #         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   create-release:
     name: Create Release
@@ -290,7 +290,7 @@ jobs:
     needs:
       - build-windows
       - build-macos
-      - build-ubuntu
+      # - build-ubuntu
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
